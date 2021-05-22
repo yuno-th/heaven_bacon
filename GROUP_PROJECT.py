@@ -176,6 +176,32 @@ def printSolution(solution):
     for node in solution:
         print( node.lastMove,node.status)
 
+def h_1(node):
+    corner = [1, 3, 5, 7, 9, 11, 13 ,15]
+    Index_corner = [0, 2, 4, 6, 8, 10, 12, 14]
+    n = 0
+    for i in range(8) :
+        if node.status[Index_corner[i]] != corner[i]:
+            n += 1
+    return(n)
+
+
+def h_2(node):
+    edge = [2, 4, 6, 8, 10, 12, 14, 16, 17, 18, 19, 20]
+    Index_edge = [1, 3, 5, 7, 9, 11, 13, 15, 16, 17, 18, 19]
+    n = 0
+    for i in range(12) :
+        if node.status[Index_edge[i]] != edge[i]:
+            n += 1
+    return(n)
+
+def h_3(node):
+    n = h_1(node) + h_2(node)
+    return(n)
+
+def h_4(node):
+    m = min(h_1(node), h_2(node))
+
 #initial = Node([3,4,5,6,7,8,1,2,9,10,11,12,13,14,15,16,17,18,19,20], None, None, None)
 #initial = Node([9,8,13,6,4,11,7,1,2,3,5,10,12,14,15,16,19,17,18,20], None, None, None)
 initial = Node([7, 18, 18, 6, 16, 2, 14, 12, 19, 10, 9, 5, 11, 4, 18, 8, 20, 17, 11, 14],None,None,None)
