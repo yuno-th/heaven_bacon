@@ -1,14 +1,128 @@
 import copy
+import random;
+import time as T;
+
+#Require these libraries.
+import matplotlib.pyplot as plt 
+
+
+#Linear Probing.
+class HashTable:
+    class Entry:
+       def __init__(self,k,v):
+            self.key = k; self.value = v;
+
+    def __init__(self,m=1):
+        if(m <= 0): m = 1;
+        self.table = [None]*m;
+        self.size = 0;
+        self.DELETE = self.Entry(object(),None);
+        self.numExistCells = 0;
+
+    def __indexOf(self,key):
+        hI = self.__h(key);
+        for j in range(len(self.table)):
+            e = self.table[hI];
+            if(e == None or e.key == key): return hI;
+            hI = (hI + 1) % len(self.table);
+            
+    def __h(self,key):
+        key = str(key);
+        return (abs(hash(key)))% len(self.table)
+
+    def length(self): return self.size;
+
+    def display(self):
+        x,y = [],[];
+        for i in range(len(self.table)):
+            x.append(i);
+            e = self.table[i]
+            if(e != None and e != self.DELETE): y.append(1);
+            else: y.append(0);
+        print("n = ",self.size,"m=",len(self.table),"lambda",self.size/len(self.table));
+        plt.bar(x,y,align='edge', width=1);
+        plt.show();
+    
+
+    def get(self,key):
+        hI = self.__indexOf(key);
+        e = self.table[hI];
+        return None if (e == None or e == self.DELETE) else e.value;
+
+    def put(self,k,v):
+        empty = -1;
+        oldValue = None;
+        hI = self.__h(k);
+        
+        for j in range(len(self.table)):
+            e = self.table[hI]
+            if(e == self.DELETE and empty == -1): empty = hI;
+            if(e == None or e.key == k): break;
+            hI = (hI + 1) % len(self.table);
+        
+        if(self.table[hI] == None):
+            if(empty != -1): hI = empty;
+            self.table[hI] = self.Entry(k,v);
+            self.size += 1;
+            if(empty == -1): self.numExistCells += 1;
+            if(self.numExistCells > len(self.table)/2): self.rehash();
+            
+        elif(self.table[hI].key == k):
+            oldValue = self.table[hI].value;
+            self.table[hI].value = v;
+
+        return oldValue;
+
+    def remove(self,key):
+        hI = self.__indexOf(key);
+        if(self.table[hI] != None):
+            self.table[hI] = self.DELETE;
+            self.size -= 1;
+
+    def rehash(self):
+        oldTable = self.table
+        self.table = [None] * self.size * 4
+        self.size = self.numExistCells = 0;
+        for i in range(len(oldTable)):
+            entry = oldTable[i]
+            if(entry != None and entry != self.DELETE):
+                self.put(entry.key,entry.value)
+    
+
+class minheap:
+    data,s = [],0;
+    def __greather(self,i,j):
+        return self.data[i].cost() < self.data[j].cost(); #need to defined cost method node.
+    def __fix_up(self,n):
+        while( n > 0 ):
+            p = (n - 1)//2; # parent index;
+            if(not self.__greather(n,p)): break; # if parent is more important, it's ending.
+            self.data[n],self.data[p] = self.data[p],self.data[n];
+            n = p;
+    def __fix_down(self,p):
+        while(  2*p + 1 < self.s): # if have a left child, do this.
+            cI = 2*p + 1;
+            if ( cI + 1 < self.s and self.__greather(cI+1,cI)): cI += 1; # if right child is more vital, change index to the right
+            if ( self.__greather(p,cI)) : break; #พ่อสำคัญน้อยกว่า ก็ถูกแล้ว
+            self.data[p],self.data[cI] = self.data[cI],self.data[p];
+            p = cI;
+    def size(self): return self.s;
+    def peek(self): return None if self.s == 0 else self.data[0];
+    def enqueue(self,obj):
+        if( obj == None ): return
+        self.data.append(obj); self.__fix_up(self.s); self.s += 1;
+    def dequeue(self):
+        top = self.peek(); self.s -= 1;
+        self.data[0] = self.data[self.s]; self.data.pop();
+        if(self.s > 0) : self.__fix_down(0);
+        return top;
+
+
 
 #note status is list of 20 pieces [1,2,3,...,20]
-class Node():
-    def __init__(self, status, lastMove, repMove, parent):
-        self.status = status
-        self.lastMove = lastMove
-        self.repMove = repMove
-        self.parent = parent
 
-actionList = ['U', 'D', 'R', 'L', 'B', 'F']
+actionList = ['U', 'Ui', 'D', 'Di', 'R', 'Ri', 'L', 'Li', 'B', 'Bi', 'F', 'Fi']
+
 
 def transition(node, action):
     statusBf = copy.deepcopy(node.status)
@@ -23,15 +137,34 @@ def transition(node, action):
         statusAf[1] = statusBf[7]
         statusAf[3] = statusBf[1]
         statusAf[5] = statusBf[3]
-        statusAf[7] = statusBf[5]   
+        statusAf[7] = statusBf[5]
         
         if node.lastMove == 'U':
             repMove = node.repMove + 1
-            if repMove == 4:
+            if repMove == 3:
                 statusAf = None    
         else:
             repMove = 1  
 
+    if action == 'Ui':
+        statusAf[6] = statusBf[0]
+        statusAf[0] = statusBf[2]
+        statusAf[2] = statusBf[4]
+        statusAf[4] = statusBf[6]
+        
+        statusAf[7] = statusBf[1]
+        statusAf[1] = statusBf[3]
+        statusAf[3] = statusBf[5]
+        statusAf[5] = statusBf[7]
+        
+        if node.lastMove == 'Ui':
+            repMove = node.repMove + 1
+            if repMove == 3:
+                statusAf = None    
+        else:
+            repMove = 1  
+            
+#-----------------------------------------------------------------------------
     if action == 'D':     
         statusAf[8] = statusBf[14]
         statusAf[10] = statusBf[8]
@@ -45,11 +178,30 @@ def transition(node, action):
         
         if node.lastMove == 'D':
             repMove = node.repMove + 1
-            if repMove == 4:
+            if repMove == 3:
                 statusAf = None    
         else:
             repMove = 1          
 
+    if action == 'Di':     
+        statusAf[14] = statusBf[8]
+        statusAf[8] = statusBf[10]
+        statusAf[10] = statusBf[12]
+        statusAf[12] = statusBf[14]
+        
+        statusAf[15] = statusBf[9]
+        statusAf[9] = statusBf[11]
+        statusAf[11] = statusBf[13]
+        statusAf[13] = statusBf[15]    
+        
+        if node.lastMove == 'Di':
+            repMove = node.repMove + 1
+            if repMove == 3:
+                statusAf = None    
+        else:
+            repMove = 1  
+            
+#-----------------------------------------------------------------------------
     if action == 'R':  
         statusAf[2] = statusBf[10]
         statusAf[4] = statusBf[2]
@@ -63,11 +215,30 @@ def transition(node, action):
         
         if node.lastMove == 'R':
             repMove = node.repMove + 1
-            if repMove == 4:
+            if repMove == 3:
                 statusAf = None    
         else:
             repMove = 1          
 
+    if action == 'Ri':  
+        statusAf[10] = statusBf[2]
+        statusAf[2] = statusBf[4]
+        statusAf[4] = statusBf[12]
+        statusAf[12] = statusBf[10]
+        
+        statusAf[17] = statusBf[3]
+        statusAf[3] = statusBf[18]
+        statusAf[18] = statusBf[11]
+        statusAf[11] = statusBf[17]   
+        
+        if node.lastMove == 'Ri':
+            repMove = node.repMove + 1
+            if repMove == 3:
+                statusAf = None    
+        else:
+            repMove = 1
+
+#-----------------------------------------------------------------------------
     if action == 'L':       
         statusAf[0] = statusBf[8]
         statusAf[6] = statusBf[0]
@@ -81,11 +252,30 @@ def transition(node, action):
         
         if node.lastMove == 'L':
             repMove = node.repMove + 1
-            if repMove == 4:
+            if repMove == 3:
                 statusAf = None    
         else:
             repMove = 1  
 
+    if action == 'Li':       
+        statusAf[8] = statusBf[0]
+        statusAf[0] = statusBf[6]
+        statusAf[6] = statusBf[14]
+        statusAf[14] = statusBf[8]
+        
+        statusAf[16] = statusBf[7]
+        statusAf[7] = statusBf[19]
+        statusAf[19] = statusBf[15]
+        statusAf[15] = statusBf[16]
+        
+        if node.lastMove == 'Li':
+            repMove = node.repMove + 1
+            if repMove == 3:
+                statusAf = None    
+        else:
+            repMove = 1              
+            
+#-----------------------------------------------------------------------------
     if action == 'B':
         statusAf[6] = statusBf[14]
         statusAf[4] = statusBf[6]
@@ -99,11 +289,30 @@ def transition(node, action):
         
         if node.lastMove == 'B':
             repMove = node.repMove + 1
-            if repMove == 4:
+            if repMove == 3:
+                statusAf = None    
+        else:
+            repMove = 1  
+            
+    if action == 'Bi':
+        statusAf[14] = statusBf[6]
+        statusAf[6] = statusBf[4]
+        statusAf[4] = statusBf[12]
+        statusAf[12] = statusBf[14]
+        
+        statusAf[19] = statusBf[5]
+        statusAf[5] = statusBf[18]
+        statusAf[18] = statusBf[13]
+        statusAf[13] = statusBf[19]
+        
+        if node.lastMove == 'Bi':
+            repMove = node.repMove + 1
+            if repMove == 3:
                 statusAf = None    
         else:
             repMove = 1  
 
+#-----------------------------------------------------------------------------
     if action == 'F':
         statusAf[0] = statusBf[8]
         statusAf[2] = statusBf[0]
@@ -112,21 +321,43 @@ def transition(node, action):
         
         statusAf[1] = statusBf[16]
         statusAf[17] = statusBf[1]
-        statusAf[10] = statusBf[17]
-        statusAf[16] = statusBf[10]
+        statusAf[9] = statusBf[17]
+        statusAf[16] = statusBf[9]
         
         if node.lastMove == 'F':
             repMove = node.repMove + 1
-            if repMove == 4:
+            if repMove == 3:
                 statusAf = None    
         else:
-            repMove = 1  
-    
+            repMove = 1
+            
+    if action == 'Fi':
+        statusAf[8] = statusBf[0]
+        statusAf[0] = statusBf[2]
+        statusAf[2] = statusBf[10]
+        statusAf[10] = statusBf[8]
+        
+        statusAf[16] = statusBf[1]
+        statusAf[1] = statusBf[17]
+        statusAf[17] = statusBf[9]
+        statusAf[9] = statusBf[16]
+        
+        if node.lastMove == 'Fi':
+            repMove = node.repMove + 1
+            if repMove == 3:
+                statusAf = None    
+        else:
+            repMove = 1
+
+#-----------------------------------------------------------------------------
     child = Node(statusAf, action, repMove, node)
+    child.depth = node.depth + 1
     if statusAf == None :
         return(None)
     else:
         return(child)
+
+    
     
 def expand(node):
     listNextNode = []
@@ -137,19 +368,15 @@ def expand(node):
     return(listNextNode)
 
 def goalCheck(node):
-    if node.status == [1,2,3,4,5,6,7,8,9,10,
-                       11,12,13,14,15,16,17,18,19,20]:
-        return(True)
-    else:
-        return(False)
+    target = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20];
+    return node.status == target;
     
-def solve(initial):    
+def solve1(initial):    
     frontier = [initial]
     solution = []
-    visited = []
+    visited = [];
     while True:
-        if len(frontier) == 0:
-            break
+        if len(frontier) == 0: break
         else:
             node = frontier.pop(0) #HERE!!!!!!!!!!!!!!
             if goalCheck(node):
@@ -168,42 +395,246 @@ def solve(initial):
                             break
                     if not repeat:
                         visited.append(item)
-                        frontier.append(item)
-                #print(len(visited))                              
-    return(solution)
+                        frontier.append(item);                             
+    return(solution,len(visited))
+
+def solve2(initial):    
+    frontier = minheap();
+    frontier.enqueue(initial);
+    solution = []
+    h = HashTable(10000);
+    while frontier.size() > 0:
+        node = frontier.dequeue();
+        if goalCheck(node):
+            path = [node]
+            while node.parent != None : 
+                path.insert(0, node.parent)
+                node = node.parent
+                solution = path
+            break
+        else:
+            for action in actionList:
+                new_item = transition(node,action);
+                if(new_item == None): continue;
+                n = h.get(new_item);
+                if(n == None):
+                    frontier.enqueue(new_item);
+                    h.put(new_item,new_item);
+    return(solution,h.length())
+
+class Node():
+    depth = 0;
+    def __init__(self, status, lastMove, repMove, parent):
+        self.status = status
+        self.lastMove = lastMove
+        self.repMove = repMove
+        self.parent = parent
+
+    def cost(self):
+        return h_2(self);
+
+
 
 def printSolution(solution):
+    print("\nOUTPUT\n");
     for node in solution:
         print( node.lastMove,node.status)
 
-def h_1(node):
+def gf(node):
+    e1 = [1,3,5,7];  e2 = [1,16,9,17];  e3 = [3,18,11,17];
+    e4 = [9,15,13,11]; e5 = [7,19,15,16]; e6 = [5,18,13,19];
+    f1 = [0,2,4,6];  f2 = [0,2,8,10];  f3 = [4,6,12,14];
+    f4 = [6,0,8,14]; f5 = [2,4,12,10]; f6 = [8,10,12,14];
+    mf1 = 0;mf2=0;mf3=0;mf4=0;mf5=0;mf6=0;
+    me1=0;me2=0;me3=0;me4=0;me5=0;me6=0;
+    for i in f1:
+        if(node.status[i] != i+1): mf1 += 1;
+    for i in f2:
+        if(node.status[i] != i+1): mf2 += 1;
+    for i in f3:
+        if(node.status[i] != i+1): mf3 += 1;
+    for i in f4:
+        if(node.status[i] != i+1): mf4 += 1;
+    for i in f5:
+        if(node.status[i] != i+1): mf5 += 1;
+    for i in f6:
+        if(node.status[i] != i+1): mf6 += 1;
+    for i in e1:
+        if(node.status[i] != i+1): me1 += 1;
+    for i in e2:
+        if(node.status[i] != i+1): me2 += 1;
+    for i in e3:
+        if(node.status[i] != i+1): me3 += 1;
+    for i in e4:
+        if(node.status[i] != i+1): me5 += 1;
+    for i in e5:
+        if(node.status[i] != i+1): me5 += 1;
+    for i in e6:
+        if(node.status[i] != i+1): me6 += 1;
+    mef1 = mf1+me1;mef2 = mf2+me2;
+    mef3 = mf3+me3;mef4 = mf4+me4;
+    mef5 = mf5 + me5;mef6 = mf6+me6;
+    return (max(mef1,mef2,mef3,mef4,mef5,mef6),min(mef1,mef2,mef3,mef4,mef5,mef6))
+#!!!!!!!!!!!!!!!!!!!!!!!
+W = 1.8
+#!!!!!!!!!!!!!!!!!!!!!!!
+#From our experiments.
+x = [0.6,0.7,0.8,0.9,1,1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,2];
+y = [0.14000964164733887,0.10901951789855957,0.033005475997924805,0.03199958801269531
+     ,0.010998010635375977,0.006998777389526367,0.007998466491699219
+     ,0.008002519607543945,0.005999326705932617,0.004996538162231445
+     ,0.003998279571533203,0.0039980411529541016,0.003972530364990234
+     ,0.0039997100830078125,0.005998134613037109]
+
+def h_0(node): 
+    correct = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20];
+    c = 0;
+    for i in range(len(correct)):
+        if(node.status[i] != correct[i]): c+= 1;
+    return c +node.depth*W;
+
+def h_1(node): 
     corner = [1, 3, 5, 7, 9, 11, 13 ,15]
     Index_corner = [0, 2, 4, 6, 8, 10, 12, 14]
     n = 0
     for i in range(8) :
         if node.status[Index_corner[i]] != corner[i]:
             n += 1
-    return(n)
+    return(n +node.depth*W) 
 
-
-def h_2(node):
+def h_2(node): # Test for this function
     edge = [2, 4, 6, 8, 10, 12, 14, 16, 17, 18, 19, 20]
     Index_edge = [1, 3, 5, 7, 9, 11, 13, 15, 16, 17, 18, 19]
     n = 0
     for i in range(12) :
         if node.status[Index_edge[i]] != edge[i]:
             n += 1
-    return(n)
+    return(n) + node.depth*W
 
 def h_3(node):
     n = h_1(node) + h_2(node)
-    return(n)
+    return(n)+node.depth*W 
 
 def h_4(node):
     m = min(h_1(node), h_2(node))
+    return m+node.depth*W; 
 
-#initial = Node([3,4,5,6,7,8,1,2,9,10,11,12,13,14,15,16,17,18,19,20], None, None, None)
-#initial = Node([9,8,13,6,4,11,7,1,2,3,5,10,12,14,15,16,19,17,18,20], None, None, None)
-initial = Node([7, 18, 18, 6, 16, 2, 14, 12, 19, 10, 9, 5, 11, 4, 18, 8, 20, 17, 11, 14],None,None,None)
-sln = solve(initial)
-printSolution(sln)
+def h_5(node):
+    f1 = [0,2,4,6];  f2 = [0,2,8,10];  f3 = [4,6,12,14];
+    f4 = [6,0,8,14]; f5 = [2,4,12,10]; f6 = [8,10,12,14];
+    m1 = 0;m2 = 0;m3 = 0;m4 = 0;m5=0;m6 =0;
+    for i in f1:
+        if(node.status[i] != i+1): m1 += 1;
+    for i in f2:
+        if(node.status[i] != i+1): m2 += 1;
+    for i in f3:
+        if(node.status[i] != i+1): m3 += 1;
+    for i in f4:
+        if(node.status[i] != i+1): m4 += 1;
+    for i in f5:
+        if(node.status[i] != i+1): m5 += 1;
+    for i in f6:
+        if(node.status[i] != i+1): m6 += 1;
+    return max(m1,m2,m3,m4,m5,m6) +node.depth*W; 
+
+def h_6(node): 
+    e1 = [1,3,5,7];  e2 = [1,16,9,17];  e3 = [3,18,11,17];
+    e4 = [9,15,13,11]; e5 = [7,19,15,16]; e6 = [5,18,13,19];
+    m1 = 0;m2 = 0;m3 = 0;m4 = 0;m5=0;m6 =0;
+    for i in e1:
+        if(node.status[i] != i+1): m1 += 1;
+    for i in e2:
+        if(node.status[i] != i+1): m2 += 1;
+    for i in e3:
+        if(node.status[i] != i+1): m3 += 1;
+    for i in e4:
+        if(node.status[i] != i+1): m4 += 1;
+    for i in e5:
+        if(node.status[i] != i+1): m5 += 1;
+    for i in e6:
+        if(node.status[i] != i+1): m6 += 1;
+
+    #print(m1,m2,m3,m4,m5,m6);
+    return max(m1,m2,m3,m4,m5,m6)+node.depth*W;
+    #return m1+m2+m3+m4+m5+m6
+
+
+def h_7(node): 
+    return gf(node)[0] + gf(node)[1] +node.depth*W;
+
+    
+def h_8(node):
+    return h_7(node) + h_6(node) +node.depth*W; 
+
+
+
+
+#generating
+SMILE = Node([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20], None, None, None)
+for i in range(4):
+    act = random.choice(actionList)
+    SMILE = transition(SMILE, act)
+print("INPUT\n");
+
+n = SMILE.status
+
+#initial = Node([11, 18, 3, 6, 15, 20, 7, 2, 13, 19, 5, 14, 9, 17, 1, 10, 8, 12, 4, 16] ,None,None,None)
+initial = Node(n,None,None,None);
+print(initial.status);
+def exp():
+    print("\n Bread first search is searching ... ");
+    start = T.time();
+    sln1,n1 = solve1(initial)
+    print("\ntime : ",T.time() - start,"s");
+    printSolution(sln1)
+    print("Bread frist search is OK.","Explores :",n1,"nodes\n");
+
+def exp1():
+    print("\nHeuristic search is searching ...  W = ",W);
+    start = T.time();
+    sln2,n2 = solve2(initial);
+    print("\ntime : ",T.time() - start,"s");
+    printSolution(sln2);
+    print("Heuristic search is OK.","Explores :",n2,"nodes\n");
+    
+#plt.figure(figsize=(8,7));
+#plt.bar(x,y,align = "center",width = 0.04);
+#plt.title(label = " Relation between different weight and diffetent running time from selected input");
+#plt.ylabel("time complexity (second)",fontsize=13);
+#plt.xlabel("weight",fontsize=13);
+#good = min(y); gI = y.index(good);gx = x[gI];
+#plt.show();
+#exp();
+exp1();
+#print("Best weight is ",gx);
+
+
+
+# ค่านี้เกิดจากรันทีละรอบละรอบ ทั้งหมด 30 รอบ
+testcases = [0.08248305320739746,0.01199960708618164,0.000997781753540039
+             ,0.03299832344055176,0.012005329132080078,0.0019989013671875,
+             0.0030002593994140625,0.09499931335449219,0.018998384475708008,
+             0.012029170989990234,0.0019965171813964844,0.003955364227294922,
+             0.0009996891021728516,0.00603938102722168,0.0009992122650146484,
+             0.00600123405456543,0.0370330810546875,0.01403665542602539,
+             0.007998228073120117,0.0019974708557128906,0.0030286312103271484,
+             0.0010023117065429688,0.0030019283294677734,0.000957489013671875,
+             0.004001140594482422,0.006027698516845703,0.008999109268188477,
+             0.0019986629486083984,0.003998756408691406,0.003999471664428711];
+plt.scatter([x for x in range(30)],testcases);
+plt.ylabel("time complexity (second)",fontsize=13);
+plt.title("Others 30 different inputs",fontsize=13);
+plt.show();
+
+
+
+
+
+
+
+
+    
+
+
+
+    
